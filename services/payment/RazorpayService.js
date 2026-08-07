@@ -1,4 +1,4 @@
-// import { getRazorpay } from "../../config/razorpay.js";
+import { getRazorpay } from "../../config/razorpay.js";
 
 class RazorpayService {
 
