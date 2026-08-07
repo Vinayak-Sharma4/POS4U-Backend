@@ -37,7 +37,8 @@ const formSchema = new mongoose.Schema(
         type: String,
         enum: [
             "Pending",
-            "Paid"
+            "Paid",
+            "Failed"
         ],
         default: "Pending"
     },
@@ -46,6 +47,20 @@ const formSchema = new mongoose.Schema(
         type: String,
         default: ""
     },
+    orderId: {
+    type: String,
+    default: ""
+},
+
+paymentGateway: {
+    type: String,
+    default: ""
+},
+
+paidAt: {
+    type: Date,
+    default: null
+},
 
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,

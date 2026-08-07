@@ -15,6 +15,7 @@ import { fileURLToPath } from "url";
 import formRoutes from "./routes/formRoutes.js";
 
 import paymentRoutes from "./routes/paymentRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 console.log("Payment Routes Imported");
 
@@ -71,6 +72,7 @@ app.use("/api/customers", customerRoutes);
 app.use("/api/forms", formRoutes);
 console.log("Mounting Payment Routes");
 app.use("/api/payment",paymentRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 app.get("/", (req, res) => {
     res.json({
