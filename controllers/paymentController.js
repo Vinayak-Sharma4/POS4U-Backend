@@ -1,39 +1,3 @@
-// import PaymentFactory from "../services/payment/PaymentFactory.js";
-
-// export const createOrder = async (req, res) => {
-
-//     try {
-
-//         console.log("Request Body:", req.body);
-
-//         const gateway = PaymentFactory.getGateway();
-
-//         const order = await gateway.createOrder(req.body);
-
-//         console.log("Order Created:", order);
-
-//         return res.json({
-//             success: true,
-//             data: order
-//         });
-
-//         console.log("Headers:", req.headers);
-//         console.log("Body:", req.body);
-
-//     } catch (error) {
-
-//         console.error("========== PAYMENT ERROR ==========");
-//         console.error(error);
-//         console.error("===================================");
-
-//         return res.status(500).json({
-//             success: false,
-//             message: error.message
-//         });
-
-//     }
-
-// };
 import PaymentFactory from "../services/payment/PaymentFactory.js";
 import Form from "../models/Form.js";
 import mongoose from "mongoose";
@@ -78,7 +42,11 @@ export const createOrder = async (req, res) => {
 
         }
 
-        if (!application.fees || Number(application.fees) <= 0) {
+        console.log("Application Fees:", application.fees);
+
+        const fees = Number(application.fees);
+
+        if (!fees || fees <= 0) {
 
             return res.status(400).json({
                 success: false,
@@ -98,44 +66,29 @@ export const createOrder = async (req, res) => {
 
         const gateway = PaymentFactory.getGateway();
 
+        console.log("Calling Payment Gateway with:", {
+            applicationId: application._id.toString(),
+            fees: fees
+        });
+
         const order = await gateway.createOrder({
 
             applicationId: application._id.toString(),
 
-            fees: Number(application.fees)
+            fees: fees
 
         });
 
         await Form.findByIdAndUpdate(
-
             application._id,
-
             {
                 orderId: order.orderId,
-
                 paymentGateway: "razorpay",
-
                 paymentStatus: "Pending"
             }
-
         );
 
         console.log("Order Created:", order);
-
-        console.log(
-            "Application ID:",
-            application._id.toString()
-        );
-
-        console.log(
-            "Application Fees:",
-            application.fees
-        );
-
-        console.log(
-            "Razorpay Order ID:",
-            order.orderId
-        );
 
         console.log("=================================");
 
@@ -151,9 +104,7 @@ export const createOrder = async (req, res) => {
 
         console.error("========== PAYMENT ERROR ==========");
 
-        console.error("Message:", error.message);
-
-        console.error("Stack:", error.stack);
+        console.error(error);
 
         console.error("===================================");
 
@@ -161,7 +112,7 @@ export const createOrder = async (req, res) => {
 
             success: false,
 
-            message: error.message
+            message: error.message || "Payment order creation failed."
 
         });
 
