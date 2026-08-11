@@ -12,7 +12,7 @@ export const sendSignupRequestEmail = async (request, token) => {
 
     const baseUrl =
         process.env.BACKEND_PUBLIC_URL ||
-        "http://localhost:5000";
+        "https://pos4u-backend.onrender.com";
 
     const approveUrl =
         `${baseUrl}/api/auth/signup/approve/${token}`;
