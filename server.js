@@ -1,6 +1,8 @@
+import "dotenv/config";
+import dotenv from "dotenv";
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import helmet from "helmet";
 import compression from "compression";
 import morgan from "morgan";
@@ -16,6 +18,7 @@ import formRoutes from "./routes/formRoutes.js";
 
 import paymentRoutes from "./routes/paymentRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 console.log("Payment Routes Imported");
 
@@ -44,6 +47,48 @@ const startServer = async () => {
 };
 
 const app = express();
+console.log("=================================");
+console.log("POS4U ENVIRONMENT CHECK");
+console.log("=================================");
+
+console.log(
+    "GMAIL_USER:",
+    process.env.GMAIL_USER || "MISSING"
+);
+
+console.log(
+    "GMAIL_APP_PASSWORD:",
+    process.env.GMAIL_APP_PASSWORD
+        ? "LOADED"
+        : "MISSING"
+);
+
+console.log(
+    "CONTACT_EMAIL:",
+    process.env.CONTACT_EMAIL || "MISSING"
+);
+
+console.log(
+    "TWILIO_ACCOUNT_SID:",
+    process.env.TWILIO_ACCOUNT_SID
+        ? "LOADED"
+        : "MISSING"
+);
+
+console.log(
+    "TWILIO_AUTH_TOKEN:",
+    process.env.TWILIO_AUTH_TOKEN
+        ? "LOADED"
+        : "MISSING"
+);
+
+console.log(
+    "TWILIO_PHONE_NUMBER:",
+    process.env.TWILIO_PHONE_NUMBER || "MISSING"
+);
+
+console.log("=================================");
+
 
 /* =======================
    Global Middlewares
@@ -73,6 +118,7 @@ app.use("/api/forms", formRoutes);
 console.log("Mounting Payment Routes");
 app.use("/api/payment",paymentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/contact", contactRoutes);
 
 app.get("/", (req, res) => {
     res.json({

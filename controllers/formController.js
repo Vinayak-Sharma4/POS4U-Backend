@@ -1,6 +1,12 @@
 import Form from "../models/Form.js";
 
+
+// ==========================================
+// CREATE FORM
+// ==========================================
+
 export const createForm = async (req, res) => {
+
     try {
 
         const {
@@ -11,6 +17,7 @@ export const createForm = async (req, res) => {
             fees
         } = req.body;
 
+
         if (
             !name ||
             !mobile ||
@@ -18,11 +25,17 @@ export const createForm = async (req, res) => {
             !formName ||
             !fees
         ) {
+
             return res.status(400).json({
+
                 success: false,
+
                 message: "All fields are required."
+
             });
+
         }
+
 
         const form = await Form.create({
 
@@ -34,7 +47,7 @@ export const createForm = async (req, res) => {
 
             formName,
 
-            fees,
+            fees: Number(fees),
 
             document: req.file
                 ? req.file.filename
@@ -44,10 +57,18 @@ export const createForm = async (req, res) => {
 
             paymentId: "",
 
+            orderId: "",
+
+            paymentGateway: "",
+
+            paidAt: null,
+
             createdBy: null
+
         });
 
-        res.status(201).json({
+
+        return res.status(201).json({
 
             success: true,
 
@@ -57,11 +78,13 @@ export const createForm = async (req, res) => {
 
         });
 
-    } catch (error) {
+    }
 
-        console.log(error);
+    catch (error) {
 
-        res.status(500).json({
+        console.error("Create Form Error:", error);
+
+        return res.status(500).json({
 
             success: false,
 
@@ -70,4 +93,47 @@ export const createForm = async (req, res) => {
         });
 
     }
+
+};
+
+
+// ==========================================
+// GET ALL FORMS
+// ==========================================
+
+export const getForms = async (req, res) => {
+
+    try {
+
+        const forms = await Form
+            .find()
+            .sort({ createdAt: -1 });
+
+
+        return res.status(200).json({
+
+            success: true,
+
+            count: forms.length,
+
+            data: forms
+
+        });
+
+    }
+
+    catch (error) {
+
+        console.error("Get Forms Error:", error);
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: error.message
+
+        });
+
+    }
+
 };
