@@ -19,6 +19,7 @@ import formRoutes from "./routes/formRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 console.log("Payment Routes Imported");
 
@@ -47,6 +48,79 @@ const startServer = async () => {
 };
 
 const app = express();
+
+// ==========================================
+// SECURITY HEADERS
+// ==========================================
+
+app.use(
+    helmet({
+        crossOriginResourcePolicy: {
+            policy: "cross-origin"
+        },
+
+        referrerPolicy: {
+            policy: "strict-origin-when-cross-origin"
+        }
+    })
+);
+
+
+// ==========================================
+// CORS POLICY
+// ==========================================
+
+const allowedOrigins = [
+    "https://www.pos4you.co.in",
+    "https://pos4you.co.in"
+];
+
+app.use(
+    cors({
+        origin: function (origin, callback) {
+
+            // Allow requests without an Origin header
+            // such as server-to-server requests / health checks.
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            if (allowedOrigins.includes(origin)) {
+                return callback(null, true);
+            }
+
+            return callback(
+                new Error("Not allowed by CORS")
+            );
+        },
+
+        methods: [
+            "GET",
+            "POST",
+            "PUT",
+            "PATCH",
+            "DELETE",
+            "OPTIONS"
+        ],
+
+        allowedHeaders: [
+            "Content-Type",
+            "Authorization"
+        ],
+
+        credentials: false,
+
+        optionsSuccessStatus: 204
+    })
+);
+
+
+// ==========================================
+// BODY PARSER
+// ==========================================
+
+app.use(express.json());
+
 console.log("=================================");
 console.log("POS4U ENVIRONMENT CHECK");
 console.log("=================================");
@@ -94,13 +168,11 @@ console.log("=================================");
    Global Middlewares
 ======================= */
 
-app.use(cors());
-
 app.use(express.json());
+
 
 app.use(express.urlencoded({ extended: true }));
 
-app.use(helmet());
 
 app.use(compression());
 
@@ -119,6 +191,7 @@ console.log("Mounting Payment Routes");
 app.use("/api/payment",paymentRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/contact", contactRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.get("/", (req, res) => {
     res.json({
