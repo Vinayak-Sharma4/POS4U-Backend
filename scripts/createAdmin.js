@@ -33,7 +33,7 @@ await User.create({
 
     password,
 
-    role: "Admin"
+
 
 });
 

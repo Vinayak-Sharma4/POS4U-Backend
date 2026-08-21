@@ -4,8 +4,13 @@ import {
     login,
     signup,
     approveSignup,
-    rejectSignup
+    rejectSignup,
+    forgotPassword,
+    resetPassword,
+    changePassword
 } from "../controllers/authController.js";
+
+import authMiddleware from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -27,6 +32,28 @@ router.get(
 router.get(
     "/signup/reject/:token",
     rejectSignup
+);
+
+router.post(
+    "/forgot-password",
+    forgotPassword
+);
+
+router.post(
+    "/reset-password/:token",
+    resetPassword
+);
+
+/*
+========================================
+CHANGE PASSWORD
+========================================
+*/
+
+router.put(
+    "/change-password",
+    authMiddleware,
+    changePassword
 );
 
 export default router;

@@ -1,11 +1,12 @@
+import {
+    sendSignupRequestEmail,
+    sendAccountCreatedEmail,
+    sendPasswordResetEmail
+} from "../services/signupService.js";
+
 import crypto from "crypto";
 
 import RegistrationRequest from "../models/RegistrationRequest.js";
-
-import {
-    sendSignupRequestEmail,
-    sendAccountCreatedEmail
-} from "../services/signupService.js";
 
 import {
     hashPassword
@@ -515,6 +516,333 @@ export const rejectSignup = async (req, res) => {
         res.status(500).send(`
             <h2>Unable to reject this request.</h2>
         `);
+
+    }
+
+};
+
+// ==========================================
+// FORGOT PASSWORD
+// ==========================================
+
+export const forgotPassword = async (req, res) => {
+
+    try {
+
+        const { email } = req.body;
+
+        if (!email) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Email address is required."
+            });
+
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+
+        const user = await User.findOne({
+            email: normalizedEmail
+        });
+
+        /*
+         * Important security rule:
+         *
+         * We do not reveal whether an email exists.
+         * This prevents account/email enumeration.
+         */
+
+        if (!user) {
+
+            return res.json({
+                success: true,
+                message:
+                    "If an account exists with this email, a password reset link has been sent."
+            });
+
+        }
+
+        // Generate secure random token
+        const resetToken = crypto
+            .randomBytes(32)
+            .toString("hex");
+
+        // Hash token before storing in database
+        const resetTokenHash = crypto
+            .createHash("sha256")
+            .update(resetToken)
+            .digest("hex");
+
+        // Token valid for 15 minutes
+        const resetTokenExpires =
+            new Date(Date.now() + 15 * 60 * 1000);
+
+        user.resetPasswordTokenHash = resetTokenHash;
+        user.resetPasswordExpires = resetTokenExpires;
+
+        await user.save();
+
+        /*
+         * Production frontend URL
+         *
+         * We will use environment variable so
+         * localhost and production can have different URLs.
+         */
+
+        const frontendUrl =
+            process.env.FRONTEND_URL ||
+            "http://localhost:5173";
+
+        const resetUrl =
+            `${frontendUrl}/reset-password/${resetToken}`;
+
+        // Send email
+        await sendPasswordResetEmail({
+            email: user.email,
+            name: user.fullName,
+            resetUrl
+        });
+
+        return res.json({
+            success: true,
+            message:
+                "If an account exists with this email, a password reset link has been sent."
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Forgot password error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Unable to process password reset request."
+        });
+
+    }
+};
+
+
+// ==========================================
+// RESET PASSWORD
+// ==========================================
+
+export const resetPassword = async (req, res) => {
+
+    try {
+
+        const { token } = req.params;
+
+        const { password, confirmPassword } = req.body;
+
+        if (!token) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Invalid password reset link."
+            });
+
+        }
+
+        if (!password || !confirmPassword) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password and confirm password are required."
+            });
+
+        }
+
+        if (password !== confirmPassword) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Passwords do not match."
+            });
+
+        }
+
+        /*
+         * Basic password security
+         */
+
+        if (password.length < 8) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password must contain at least 8 characters."
+            });
+
+        }
+
+        // Hash token from URL
+        const tokenHash = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
+        // Find user with valid token
+        const user = await User.findOne({
+            resetPasswordTokenHash: tokenHash,
+            resetPasswordExpires: {
+                $gt: new Date()
+            }
+        });
+
+        if (!user) {
+
+            return res.status(400).json({
+                success: false,
+                message:
+                    "Password reset link is invalid or has expired."
+            });
+
+        }
+
+        // Hash new password
+        const hashedPassword =
+            await hashPassword(password);
+
+        user.password = hashedPassword;
+
+        /*
+         * Immediately invalidate reset token.
+         * This makes the link single-use.
+         */
+
+        user.resetPasswordTokenHash = null;
+        user.resetPasswordExpires = null;
+
+        await user.save();
+
+        return res.json({
+            success: true,
+            message:
+                "Password reset successfully. You can now login with your new password."
+        });
+
+    } catch (error) {
+
+        console.error(
+            "Reset password error:",
+            error
+        );
+
+        return res.status(500).json({
+            success: false,
+            message:
+                "Unable to reset password."
+        });
+
+    }
+};
+
+export const changePassword = async (req, res) => {
+
+    try {
+
+        const { currentPassword, newPassword } = req.body;
+
+        // Validate input
+        if (!currentPassword || !newPassword) {
+
+            return res.status(400).json({
+                success: false,
+                message: "Current password and new password are required."
+            });
+
+        }
+
+        // Basic password validation
+        if (newPassword.length < 8) {
+
+            return res.status(400).json({
+                success: false,
+                message: "New password must be at least 8 characters long."
+            });
+
+        }
+
+        // User ID comes from JWT middleware
+        const userId = req.user.id;
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+
+            return res.status(404).json({
+                success: false,
+                message: "User not found."
+            });
+
+        }
+
+        // Check current password
+        const passwordMatched = await comparePassword(
+            currentPassword,
+            user.password
+        );
+
+        if (!passwordMatched) {
+
+            return res.status(401).json({
+                success: false,
+                message: "Current password is incorrect."
+            });
+
+        }
+
+        // Prevent same password
+        const samePassword = await comparePassword(
+            newPassword,
+            user.password
+        );
+
+        if (samePassword) {
+
+            return res.status(400).json({
+                success: false,
+                message: "New password must be different from your current password."
+            });
+
+        }
+
+        // Hash new password
+        const hashedPassword = await hashPassword(newPassword);
+
+        user.password = hashedPassword;
+
+        await user.save();
+
+        return res.json({
+
+            success: true,
+
+            message: "Password changed successfully."
+
+        });
+
+    } catch (error) {
+
+        console.error(
+            "CHANGE PASSWORD ERROR:",
+            error
+        );
+
+        return res.status(500).json({
+
+            success: false,
+
+            message: "Unable to change password."
+
+        });
 
     }
 
