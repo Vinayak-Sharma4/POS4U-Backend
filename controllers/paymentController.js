@@ -75,7 +75,13 @@ export const createOrder = async (req, res) => {
 
             applicationId: application._id.toString(),
 
-            fees: fees
+            fees: fees,
+
+            mobile: application.mobile,
+
+            name: application.name,
+
+            formName: application.formName
 
         });
 
@@ -83,7 +89,7 @@ export const createOrder = async (req, res) => {
             application._id,
             {
                 orderId: order.orderId,
-                paymentGateway: "razorpay",
+                paymentGateway: order.gateway || process.env.PAYMENT_GATEWAY || "razorpay",
                 paymentStatus: "Pending"
             }
         );
