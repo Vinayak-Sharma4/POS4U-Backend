@@ -7,7 +7,7 @@ export const encryptGetePay = (plainText, { iv, key }) => {
     const masterKey = getMasterKey(iv, key);
     const salt = crypto.randomBytes(16);
     const cipherIv = crypto.randomBytes(12);
-    const derivedKey = crypto.pbkdf2Sync(masterKey, salt, 65535, 32, "sha512");
+    const derivedKey = crypto.pbkdf2Sync(masterKey, salt, 10, 32, "sha512");
     const cipher = crypto.createCipheriv("aes-256-gcm", derivedKey, cipherIv);
     const ciphertext = Buffer.concat([cipher.update(plainText, "utf8"), cipher.final()]);
     const combined = Buffer.concat([salt, cipherIv, ciphertext, cipher.getAuthTag()]);
@@ -24,7 +24,7 @@ export const decryptGetePay = (cipherText, { iv, key }) => {
     const salt = combined.subarray(0, 16), cipherIv = combined.subarray(16, 28);
     const ciphertextAndTag = combined.subarray(28);
     const authTag = ciphertextAndTag.subarray(-16), ciphertext = ciphertextAndTag.subarray(0, -16);
-    const derivedKey = crypto.pbkdf2Sync(masterKey, salt, 65535, 32, "sha512");
+    const derivedKey = crypto.pbkdf2Sync(masterKey, salt, 10, 32, "sha512");
     const decipher = crypto.createDecipheriv("aes-256-gcm", derivedKey, cipherIv);
     decipher.setAuthTag(authTag);
     return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString("utf8");
