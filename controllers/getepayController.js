@@ -48,4 +48,20 @@ export const handleGetePayReturn = async (req, res) => {
         return res.redirect(target.toString());
     }
 };
-export const getGetePayHealth = async (req, res) => res.json({ success: true, gateway: "getepay", configured: Boolean(process.env.GETEPAY_MID && process.env.GETEPAY_TERMINAL_ID && process.env.GETEPAY_KEY && process.env.GETEPAY_IV && process.env.GETEPAY_URL), encryptionEncoding: process.env.GETEPAY_ENCRYPTION_ENCODING || "hex" });
+export const getGetePayHealth = async (req, res) => {
+    const required = [
+        "GETEPAY_MID",
+        "GETEPAY_TERMINAL_ID",
+        "GETEPAY_KEY",
+        "GETEPAY_IV",
+        "GETEPAY_URL"
+    ];
+    const missing = required.filter((name) => !process.env[name]);
+    return res.json({
+        success: missing.length === 0,
+        gateway: "getepay",
+        configured: missing.length === 0,
+        missing,
+        encryptionEncoding: process.env.GETEPAY_ENCRYPTION_ENCODING || "hex"
+    });
+};

@@ -17,18 +17,29 @@ class GetePayGateway extends PaymentGateway {
         const callbackUrl = process.env.GETEPAY_CALLBACK_URL || `${backendUrl()}/api/payment/getepay/callback`;
         const request = {
             mid: c.mid, amount: fees.toFixed(2), merchantTransactionId, transactionDate: getTransactionDate(), terminalId: c.terminalId,
-            udf1: String(data.mobile || ""), udf2: String(data.email || ""), udf3: String(data.name || "POS4U Customer"),
+            udf1: String(data.mobile || ""),
+            udf2: String(data.email || process.env.GETEPAY_MERCHANT_EMAIL || process.env.CONTACT_EMAIL || ""),
+            udf3: String(data.name || "POS4U Customer"),
             udf4: String(data.applicationId || ""), udf5: String(data.formName || ""), udf6: "", udf7: "", udf8: "", udf9: "web", udf10: "",
             ru: returnUrl, callbackUrl, currency: "INR", paymentMode: "ALL", bankId: "", txnType: "single", productType: "IPG",
             txnNote: `POS4U ${data.formName || "Service"}`, vpa: c.terminalId
         };
-        const payload = { mid: c.mid, terminalId: c.terminalId, req: encryptGetePay(JSON.stringify(request), { iv: c.iv, key: c.key }) };
+        if (!request.udf1) throw new Error("GetePay requires a mobile number (udf1).");
+        if (!request.udf2) throw new Error("GetePay requires an email value (udf2). Configure GETEPAY_MERCHANT_EMAIL or CONTACT_EMAIL.");
+        if (!request.ru) throw new Error("GetePay return URL is not configured.");
+        if (!request.callbackUrl) throw new Error("GetePay callback URL is not configured.");
+        const encryptedRequest = encryptGetePay(JSON.stringify(request), { iv: c.iv, key: c.key });
+        const payload = { mid: c.mid, terminalId: c.terminalId, req: encryptedRequest };
         const response = await fetch(c.url, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload) });
         const raw = await response.text();
         let gatewayResponse;
         try { gatewayResponse = JSON.parse(raw); } catch { throw new Error(`GetePay returned non-JSON response (HTTP ${response.status}).`); }
         if (!response.ok) throw new Error(gatewayResponse?.message || `GetePay invoice API failed with HTTP ${response.status}.`);
-        if (gatewayResponse?.status && String(gatewayResponse.status).toUpperCase() !== "SUCCESS") throw new Error(gatewayResponse.message || "GetePay rejected the payment request.");
+        if (gatewayResponse?.status && String(gatewayResponse.status).toUpperCase() !== "SUCCESS") {
+            const statusText = String(gatewayResponse.status);
+            const messageText = gatewayResponse.message || "GetePay rejected the payment request.";
+            throw new Error(`GetePay rejected the payment request (${statusText}): ${messageText}`);
+        }
         const encryptedResponse = gatewayResponse.response || gatewayResponse.res;
         if (!encryptedResponse) throw new Error(gatewayResponse.message || "GetePay did not return an encrypted response.");
         const decrypted = parseGetePayResponse(encryptedResponse, { iv: c.iv, key: c.key });

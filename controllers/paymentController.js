@@ -79,6 +79,8 @@ export const createOrder = async (req, res) => {
 
             mobile: application.mobile,
 
+            email: process.env.GETEPAY_MERCHANT_EMAIL || process.env.CONTACT_EMAIL || "pos4you@outlook.com",
+
             name: application.name,
 
             formName: application.formName
@@ -110,7 +112,7 @@ export const createOrder = async (req, res) => {
 
         console.error("========== PAYMENT ERROR ==========");
 
-        console.error(error);
+        console.error("Payment gateway error:", error?.message || error);
 
         console.error("===================================");
 
