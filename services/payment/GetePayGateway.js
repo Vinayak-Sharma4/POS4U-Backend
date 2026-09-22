@@ -35,6 +35,34 @@ class GetePayGateway extends PaymentGateway {
         if (!request.callbackUrl) throw new Error("GetePay callback URL is not configured.");
         const requestJson = JSON.stringify(request);
         const encryptedRequest = encryptGetePay(requestJson, { iv: c.iv, key: c.key });
+        console.log("========== GETEPAY REQUEST DEBUG ==========");
+console.log({
+  mid: request.mid,
+  amount: request.amount,
+  merchantTransactionId: request.merchantTransactionId,
+  transactionDate: request.transactionDate,
+  terminalId: request.terminalId,
+  udf1: request.udf1,
+  udf2: request.udf2,
+  udf3: request.udf3,
+  udf4: request.udf4,
+  udf5: request.udf5,
+  udf6: request.udf6,
+  udf7: request.udf7,
+  udf8: request.udf8,
+  udf9: request.udf9,
+  udf10: request.udf10,
+  ru: request.ru,
+  callbackUrl: request.callbackUrl,
+  currency: request.currency,
+  paymentMode: request.paymentMode,
+  bankId: request.bankId,
+  txnType: request.txnType,
+  productType: request.productType,
+  txnNote: request.txnNote,
+  vpa: request.vpa,
+});
+console.log("===========================================");
         const payload = { mid: c.mid, terminalId: c.terminalId, req: encryptedRequest };
 
         console.log("GetePay request metadata:", {
