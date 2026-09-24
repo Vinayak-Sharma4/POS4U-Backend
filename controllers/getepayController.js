@@ -23,7 +23,7 @@ export const handleGetePayCallback = async (req, res) => {
     try {
         const encrypted = encryptedResponse(req.body, req.query);
         if (!encrypted) return res.status(400).json({ success: false, message: "GetePay encrypted response is missing." });
-        const tx = parseGetePayResponse(encrypted, credentials());
+        const tx = await parseGetePayResponse(encrypted, credentials());
         const result = await persistTransaction(tx);
         console.log("GetePay callback:", { orderId: tx.merchantOrderNo, txnId: tx.getepayTxnId, status: tx.txnStatus, amount: tx.txnAmount });
         return res.status(200).json({ success: result.success, message: result.success ? "Payment processed successfully." : "Payment received but was not successful." });
@@ -33,7 +33,7 @@ export const handleGetePayReturn = async (req, res) => {
     try {
         const encrypted = encryptedResponse(req.body, req.query);
         if (!encrypted) throw new Error("Payment response was not received.");
-        const tx = parseGetePayResponse(encrypted, credentials());
+        const tx = await parseGetePayResponse(encrypted, credentials());
         const result = await persistTransaction(tx);
         const target = new URL(`${frontendUrl()}/payment-result`);
         target.searchParams.set("status", result.success ? "success" : "failed");
@@ -62,6 +62,6 @@ export const getGetePayHealth = async (req, res) => {
         gateway: "getepay",
         configured: missing.length === 0,
         missing,
-        encryptionEncoding: process.env.GETEPAY_ENCRYPTION_ENCODING || "hex"
+        encryptionEncoding: "base64"
     });
 };
